@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "miyucomics.quadcasting.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"minVersion": "0.8",
+	"client": [
+		"HexUtilsMixin",
+		"GuiSpellcastingMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

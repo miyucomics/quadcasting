@@ -10,7 +10,13 @@
 	"license": "MIT",
 	"icon": "assets/quadcasting/icon.png",
 	"environment": "*",
-	"entrypoints": {},
+	"entrypoints": {
+		"main": [
+			{
+				"value": "miyucomics.quadcasting.QuadcastingMain"
+			}
+		]
+	},
 	"mixins": [
 		"quadcasting.mixins.json"
 	],

@@ -1,43 +1,40 @@
 package miyucomics.quadcasting.mixin;
 
+import at.petrak.hexcasting.api.casting.math.HexDir;
 import at.petrak.hexcasting.client.gui.GuiSpellcasting;
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import miyucomics.quadcasting.QuadcastingMain;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import static java.lang.Math.PI;
-import static java.lang.Math.abs;
+import java.util.Map;
 
 @Mixin(value = GuiSpellcasting.class, remap = false)
 public class GuiSpellcastingMixin {
-	@Unique
-	private static final double[][] ANGLE_REMAP = new double[][] {
-		{0.0, 0.0},
-		{0.5, 1.0 / 3.0},
-		{0.75, 2.0 / 3.0},
-		{1.0, 1.0},
-		{1.5, 4.0 / 3.0},
-		{1.75, 5.0 / 3.0}
-	};
-
-	@Redirect(method = "drawMove", at = @At(value = "INVOKE", target = "Ljava/lang/Math;atan2(DD)D"))
-	private double modifyAngleCalculation(double y, double x) {
-		double angle = Math.atan2(y, x);
+	@Inject(method = "drawMove", at = @At(value = "INVOKE", target = "Lat/petrak/hexcasting/api/casting/math/HexCoord;plus(Lat/petrak/hexcasting/api/casting/math/HexDir;)Lat/petrak/hexcasting/api/casting/math/HexCoord;"))
+	private void modifySnappingCalculation(double mxOut, double myOut, CallbackInfoReturnable<Boolean> cir, @Local(name = "newdir") LocalRef<HexDir> newDirection, @Local(name = "delta") Vec2f delta) {
+		double angle = Math.atan2(-delta.y, delta.x);
 		if (angle < 0)
-			angle += 2 * PI;
-		angle /= PI;
+			angle += 2 * Math.PI;
+		newDirection.set(findClosestAngle(angle));
+	}
 
-		double bestDiff = Double.MAX_VALUE;
-		double snapped = angle;
-		for (double[] pair : ANGLE_REMAP) {
-			double diff = abs(angle - pair[0]);
-			if (diff < bestDiff) {
-				bestDiff = diff;
-				snapped = pair[1];
-			}
-		}
+	@Unique
+	private static HexDir findClosestAngle(double angle) {
+		Map.Entry<Double, HexDir> floor = QuadcastingMain.map.floorEntry(angle);
+		Map.Entry<Double, HexDir> ceiling = QuadcastingMain.map.ceilingEntry(angle);
+		if (floor == null) return ceiling.getValue();
+		if (ceiling == null) return floor.getValue();
 
-		return snapped * PI;
+		double distanceFromFloor = Math.abs(angle - floor.getKey());
+		double distanceFromCeiling = Math.abs(angle - ceiling.getKey());
+
+		return distanceFromFloor <= distanceFromCeiling ? floor.getValue() : ceiling.getValue();
 	}
 }

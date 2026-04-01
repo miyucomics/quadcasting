@@ -1,14 +1,19 @@
 package miyucomics.quadcasting.mixin;
 
+import at.petrak.hexcasting.api.casting.math.HexCoord;
 import at.petrak.hexcasting.client.gui.GuiSpellcasting;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import miyucomics.quadcasting.DrawStateAccessor;
+import net.minecraft.util.math.Vec2f;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
 
 @Mixin(value = GuiSpellcasting.class, remap = false)
 public class GuiSpellcastingMixin {
@@ -32,5 +37,21 @@ public class GuiSpellcastingMixin {
 				}))
 				.map(entry -> entry[1])
 				.orElseThrow();
+	}
+
+	@WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lat/petrak/hexcasting/client/render/RenderLib;drawSpot(Lorg/joml/Matrix4f;Lnet/minecraft/util/math/Vec2f;FFFFF)V"))
+	private void dontDrawInaccessibleDots(Matrix4f matrix, Vec2f coordinates, float radius, float red, float green, float blue, float alpha, Operation<Void> original) {
+		GuiSpellcasting screen = (GuiSpellcasting)(Object) this;
+		Optional<HexCoord> centerPoint = DrawStateAccessor.getAnchor(screen);
+
+		if (centerPoint.isPresent()) {
+			HexCoord coord = screen.pxToCoord(coordinates);
+			int dq = coord.getQ() - centerPoint.get().getQ();
+			int dr = coord.getR() - centerPoint.get().getR();
+			if (dq == dr && Math.abs(dr) == 1)
+				return;
+		}
+
+		original.call(matrix, coordinates, radius, red, green, blue, alpha);
 	}
 }
